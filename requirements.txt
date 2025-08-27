@@ -1,0 +1,11 @@
+# Core scientific stack
+numpy>=1.26
+pandas>=2.2
+scipy>=1.11
+
+# ML toolkit
+scikit-learn>=1.4
+joblib>=1.3
+
+# Plots (for confusion matrix export)
+matplotlib>=3.8
