@@ -2,9 +2,6 @@ import pandas as pd
 import os
 
 # Path to one of the CICIDS2017 CSVs from the original dataset
-# Adjust this path if your dataset folder is named differently
-# SOURCE_FILE = "MachineLearningCSV/Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv"
-
 SOURCE_FILE = "../data/CICIDS2017_CSVs/MachineLearningCSV/Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv"
 
 
@@ -20,7 +17,6 @@ def main():
 
     os.makedirs("data", exist_ok=True)
 
-    # Take a random sample of 10 rows with all columns preserved
     df = pd.read_csv(SOURCE_FILE)
     sample = df.sample(10, random_state=42)
     sample.to_csv(OUTPUT_FILE, index=False)
