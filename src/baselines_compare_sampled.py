@@ -1,5 +1,3 @@
-# baselines_compare_sampled.py
-# Compare Decision Tree and Linear SVM baselines on a sampled subset (Objective 2)
 import os
 import argparse
 import joblib
@@ -15,9 +13,8 @@ from sklearn.metrics import (
 from data_loader import load_in_chunks
 from preprocess import preprocess_chunk_with_globals
 
-# ---------- Helpers ----------
+
 def binarize_labels(series, benign_tag="BENIGN"):
-    # BENIGN -> 0 (normal), everything else -> 1 (anomalous)
     return (series.astype(str) != benign_tag).astype(int).values
 
 def gen_batches(file_list, label_col, drop_cols, means, scaler, numeric_cols, chunksize):
@@ -33,14 +30,13 @@ def gen_batches(file_list, label_col, drop_cols, means, scaler, numeric_cols, ch
 
             y = binarize_labels(ch_p.loc[mask, label_col])
 
-            # fixed numeric feature order (as in artifacts)
             X = ch_p.loc[mask].drop(columns=[label_col], errors="ignore")
             for col in numeric_cols:
                 if col not in X.columns:
                     X[col] = np.nan
             X = X[numeric_cols].astype(float)
 
-            # residual NaN guard (should be rare after global means)
+            # residual NaN guard
             for col in numeric_cols:
                 if X[col].isna().any():
                     X[col] = X[col].fillna(means.get(col, 0.0))
@@ -110,7 +106,7 @@ def eval_with_scores(y_true, y_scores, y_pred):
     roc_auc = roc_auc_score(y_true, y_scores)           if y_scores.size else 0.0
     return cm, acc, prec, rec, f1, pr_auc, roc_auc
 
-# ---------- Main ----------
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--art", default="models/train_preprocess.joblib",

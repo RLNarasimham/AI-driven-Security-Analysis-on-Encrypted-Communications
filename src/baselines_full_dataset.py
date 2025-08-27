@@ -1,7 +1,3 @@
-# baselines_full_dataset.py
-# Train DecisionTree & LinearSVC on the FULL TRAIN split (no sampling) and evaluate on FULL TEST.
-# Uses your existing artifacts (train-only stats) to avoid leakage.
-
 import os
 import joblib
 import numpy as np
@@ -18,7 +14,7 @@ from preprocess import preprocess_chunk_with_globals
 
 ART_PATH = "./models/train_preprocess.joblib"
 
-# ---------- Load artifacts (train-only stats, scaler, file lists) ----------
+# Load artifacts
 ART = joblib.load(ART_PATH)
 drop_cols    = ART["drop_cols"]
 numeric_cols = ART["numeric_cols"]
@@ -32,7 +28,7 @@ if not train_files or not test_files:
     raise RuntimeError("Artifacts missing train_files/test_files. Re-run split-aware run_full_preprocessing.py.")
 
 N_FEATS = len(numeric_cols)
-WORKDIR = "work_full"  # temp dir for memmaps
+WORKDIR = "work_full"
 os.makedirs(WORKDIR, exist_ok=True)
 os.makedirs("models", exist_ok=True)
 
@@ -54,7 +50,7 @@ def gen_batches(file_list, chunksize=200_000):
             y = binarize_labels(ch_p.loc[mask, LABEL_COL])
 
             X = ch_p.loc[mask].drop(columns=[LABEL_COL], errors="ignore")
-            # ensure expected numeric feature set
+            
             for col in numeric_cols:
                 if col not in X.columns:
                     X[col] = np.nan
@@ -63,10 +59,10 @@ def gen_batches(file_list, chunksize=200_000):
                 if X[col].isna().any():
                     X[col] = X[col].fillna(means.get(col, 0.0))
 
-            Xs = scaler.transform(X)  # keep DF to avoid feature-name warning; returns ndarray
+            Xs = scaler.transform(X)
             yield Xs.astype(np.float32, copy=False), y.astype(np.int8, copy=False)
 
-# ---------- Pass 1: count full TRAIN rows ----------
+# Pass 1: count full TRAIN rows
 def count_rows(file_list):
     total = 0
     for _, y in gen_batches(file_list):
@@ -79,7 +75,7 @@ if n_train == 0:
     raise RuntimeError("No labeled rows found in TRAIN files.")
 print(f"Total TRAIN rows: {n_train:,}")
 
-# ---------- Pass 2: build memmaps with FULL TRAIN data ----------
+# Pass 2: build memmaps with FULL TRAIN data
 X_train_mm_path = os.path.join(WORKDIR, "train_X.dat")
 y_train_mm_path = os.path.join(WORKDIR, "train_y.dat")
 
@@ -92,13 +88,13 @@ for Xb, yb in gen_batches(train_files):
     X_train_mm[write_idx:write_idx+n, :] = Xb
     y_train_mm[write_idx:write_idx+n]    = yb
     write_idx += n
-del X_train_mm, y_train_mm  # flush to disk
+del X_train_mm, y_train_mm
 
-# Reopen memmaps read-only
+
 X_train_mm = memmap(X_train_mm_path, dtype="float32", mode="r",  shape=(n_train, N_FEATS))
 y_train_mm = memmap(y_train_mm_path, dtype="int8",   mode="r",  shape=(n_train,))
 
-# ---------- Train full-data baselines ----------
+# Train full-data baselines
 print("\nTraining DecisionTreeClassifier on FULL TRAIN...")
 dt = DecisionTreeClassifier(class_weight="balanced", random_state=42)
 dt.fit(X_train_mm, y_train_mm)
@@ -111,18 +107,17 @@ svm.fit(X_train_mm, y_train_mm)
 joblib.dump(dt,  "models/dt_full.joblib")
 joblib.dump(svm, "models/lsvc_full.joblib")
 
-# ---------- Evaluate on FULL TEST (streaming) ----------
+# Evaluate on FULL TEST (streaming)
 def eval_model(model, files, model_type):
     y_true_all, y_score_all, y_pred_all = [], [], []
     for Xb, yb in gen_batches(files):
         if len(yb) == 0:
             continue
         if model_type == "tree":
-            # DecisionTree supports predict_proba
             if hasattr(model, "predict_proba"):
                 scores = model.predict_proba(Xb)[:, 1]
             else:
-                scores = model.predict(Xb)  # fallback
+                scores = model.predict(Xb)
             preds = (scores >= 0.5).astype(int)
         else:
             # LinearSVC: use decision_function; threshold at 0
@@ -150,7 +145,7 @@ dt_cm, dt_acc, dt_prec, dt_rec, dt_f1, dt_pr, dt_roc = eval_model(dt, test_files
 print("Evaluating LinearSVC on FULL TEST...")
 svm_cm, svm_acc, svm_prec, svm_rec, svm_f1, svm_pr, svm_roc = eval_model(svm, test_files, "svm")
 
-# ---------- Report ----------
+# Report
 def print_report(name, cm, acc, prec, rec, f1, pr_auc, roc_auc):
     print(f"\n{name}")
     print(f"Confusion Matrix [[tn, fp], [fn, tp]]:\n{cm}")
@@ -165,7 +160,7 @@ print("\n=== Full-dataset Baselines ===")
 print_report("DecisionTree (full train/test)", dt_cm, dt_acc, dt_prec, dt_rec, dt_f1, dt_pr, dt_roc)
 print_report("LinearSVC   (full train/test)", svm_cm, svm_acc, svm_prec, svm_rec, svm_f1, svm_pr, svm_roc)
 
-# Save results
+# Saving results
 joblib.dump({
     "DecisionTree": {
         "cm": dt_cm, "acc": dt_acc, "prec": dt_prec, "rec": dt_rec, "f1": dt_f1, "pr_auc": dt_pr, "roc_auc": dt_roc

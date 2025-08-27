@@ -65,10 +65,9 @@ def preprocess_chunk_with_globals(chunk, drop_cols, means):
     c = chunk.copy()
     c.columns = c.columns.str.strip()
 
-    # drop globally chosen columns (ignore if missing)
+    
     c = c.drop(columns=[col for col in drop_cols if col in c.columns], errors='ignore')
 
-    # ensure numeric columns exist, then impute with global means
     for col in means.keys():
         if col not in c.columns:
             c[col] = np.nan
