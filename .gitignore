@@ -1,0 +1,104 @@
+# -----------------------
+# Project .gitignore
+# -----------------------
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual envs
+venv/
+.venv/
+env/
+env.bak/
+ENV/
+pip-log.txt
+pip-delete-this-directory.txt
+.python-version
+
+# Packaging / build artifacts
+build/
+dist/
+eggs/
+*.egg-info/
+.installed.cfg
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Mypy / editors
+.mypy_cache/
+
+# --- Jupyter / Notebooks ---
+.ipynb_checkpoints
+*.nbconvert.ipynb
+# (keep cleaned notebooks you want tracked — clear outputs before committing)
+
+# --- IDE / editor ---
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# --- OS files ---
+.DS_Store
+Thumbs.db
+
+# --- Logs / temp ---
+*.log
+*.tmp
+tmp/
+temp/
+
+# --- Databases ---
+*.sqlite3
+*.db
+
+# --- Secrets / keys ---
+.env
+.env.*
+secrets.json
+*.pem
+*.key
+
+# --- Project-specific: data, models, large outputs ---
+# Do NOT commit raw/large datasets or model binaries
+
+# Exclude the entire CICIDS dataset folder
+data/CICIDS2017_CSVs/
+data/MachineLearningCSV/
+
+# Exclude all other CSVs in data/
+data/*.csv
+
+# Keep a small demo/sample CSV (explicit exception)
+!data/CICIDS2017_sample.csv
+
+# Exclude raw PCAPs if any
+data/*.pcap
+data/*.pcapng
+data/*.pcap.gz
+
+# memmaps / working files
+work_full/
+*.dat
+*.npy
+*.npz
+
+# trained models / artifacts
+models/
+*.joblib
+*.pkl
+*.h5
+*.ckpt
+
+# zipped large source
+MachineLearningCSV.zip
+
+# large output dumps / metrics
+outputs/metrics/
+outputs/*.csv
+reports/*.xlsx
